@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+   <head>
+      <link rel="stylesheet" href="{{ url_for('static', filename='index.css') }}">
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Dublin Bikes Group 24</title>
+      <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+      <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDuD0DdJQpDJJfycXJpifv5uNuPJPq_b6c&callback=initializeMap" async defer></script>
+      <script type="text/javascript" src="http://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.4.4/underscore-min.js"></script>
+   </head>
+   <body>
+      <nav>
+         <a href="#mapSection">Map</a>
+         <a href="#weatherWidget">Weather</a>
+         <a href="#recentNews">Recent News</a>
+         <a href="#cyclingSafety">Cycling Safety Tips</a>
+         <a href="#aboutCompany">About the Company</a>
+      </nav>
+      <h1>Dublin Bikes Occupancy & Weather</h1>
+      <section id="mapSection">
+         <div id="map" style="width: 100%; height: 400px;"></div>
+      </section>
+      <div id="testDataTableContainer"></div>
+      <div id="weatherWidget">
+         <h2>Weather</h2>
+         <canvas id="weatherIcon" width="64" height="64"></canvas>
+         <div id="weatherInfo"></div>
+      </div>
+      <h1>Bike Demand Prediction</h1>
+      <form id="bike-form">
+         <label for="number">Station:</label>
+         <select id="number" name="number"></select><br>
+         <label for="datetime">Date and Time:</label>
+         <input type="datetime-local" id="datetime" name="datetime" min="" required>
+         <input type="submit" value="Predict">
+      </form>
+      <div id="output" style="display: none;"></div>
+      <div id="recentNews">
+         <h2>Cyclists Newsletter</h2>
+         <h3>Local Cyclist Wins National Championship</h3>
+         <p>Yesterday, Dublin-based cyclist Jane O'Connor won the prestigious National Cycling Championship. After an intense race, she crossed the finish line ahead of her competitors, securing her place as Ireland's top cyclist.</p>
+      </div>
+      <div id="cyclingSafety">
+         <h2>Cycling Safety Tips</h2>
+         <ul>
+            <li>Wear a helmet to protect your head in case of an accident.</li>
+            <li>Use front and rear lights when cycling in low light conditions.</li>
+            <li>Obey traffic laws and follow road signs and signals.</li>
+            <li>Stay visible by wearing bright, reflective clothing.</li>
+            <li>Maintain your bike regularly and ensure it is in good working order.</li>
+         </ul>
+      </div>
+      <div id="aboutCompany">
+         <h2>About the Company</h2>
+         <p>Phone: +353 1 234 5678</p>
+         <p>Email: info@dublinbikesoccupancyandweather.ie</p>
+      </div>
+      <script>
+         async function fetchStations() {
+             try {
+                   const response = await fetch('{{ url_for("static", filename="dublinNEW.json") }}');
+                 if (!response.ok) {
+                     throw new Error('Error fetching JSON data');
+                 }
+                 const data = await response.json();
+                 return data.station;
+             } catch (error) {
+                 console.error('Error fetching JSON data:', error);
+                 return [];
+             }
+         }
+         
+         function createStationOption(station) {
+             const option = document.createElement('option');
+             option.value = station.number;
+             option.text = station.name;
+             return option;
+         }
+         async function initializeMap() {
+             const stationsData = await fetchStations();
+         
+             const stationSelect = document.getElementById('number');
+             stationsData.forEach(station => {
+                 const option = createStationOption(station);
+                 stationSelect.add(option);
+             });
+             const mapOptions = {
+                 zoom: 14,
+                 center: { lat: 53.349805, lng: -6.26031 }
+             };
+             const map = new google.maps.Map(document.getElementById('map'), mapOptions);
+         
+             stationsData.forEach(station => {
+                 const markerPosition = new google.maps.LatLng(station.position.lat, station.position.lng);
+                 const marker = new google.maps.Marker({
+                     position: markerPosition,
+                     map: map,
+                     title: station.name
+                 });
+         
+                 const content = "Name of station: " + station.name + "<br>" +
+                                 "Station no: " + station.number + "<br>" +
+                                 "Station address: " + station.address + "<br>" +
+                                 "Accepts card?  " + station.banking + "<br>"  +
+                                 "Total bike stands:  " + station.bike_stands + "<br>";
+         
+                 const infoWindow = new google.maps.InfoWindow({
+                     content: content
+                 });
+         
+                 marker.addListener('click', function() {
+                     infoWindow.open(map, marker);
+                               var number = station.number;
+                 var button = "<button id='button1' onclick=\"getbikes(" + number + ");getthedata(" + number + ");getmoredata(" + number + ");\">Further details...</button>";
+                 var button = "<button id='button1' onclick=\"getBikeAvailability(" + number + ");\">Further details...</button>";
+         
+                   infoWindow.setContent(content + "<br>" + button);
+                   infoWindow.open(map, marker);
+                 });
+         
+         
+             });
+         }
+         
+         
+         
+         function fetchWeather() {
+                 const weatherApiUrl = "https://api.openweathermap.org/data/2.5/weather?id=7778677&APPID=38cf0419db9eded5a6f9dfa4ac4fa4b2&units=metric";
+         
+                 fetch(weatherApiUrl)
+                     .then(response => response.json())
+                     .then(data => {
+                         document.getElementById("weatherInfo").innerHTML = `Weather in Dublin: ${data.weather[0].description}<br/>Temperature: ${data.main.temp}°C`;
+                         const iconCode = data.weather[0].icon;
+                         const weatherIcon = document.getElementById("weatherIcon");
+                         weatherIcon.style.backgroundImage = `url("https://openweathermap.org/img/w/${iconCode}.png")`;
+                         weatherIcon.style.backgroundSize = "contain";
+                         weatherIcon.style.backgroundRepeat = "no-repeat";
+                     });
+             }
+         
+         function getCurrentWeatherDescriptionId(description) {
+             const weatherDescriptionMapping = {
+                 'clear sky': 1,
+                 'few clouds': 2,
+                 'scattered clouds': 3,
+                 'broken clouds': 4,
+                 'shower rain': 5,
+                 'rain': 6,
+                 'thunderstorm': 7,
+                 'snow': 8,
+                 'mist': 9
+             };
+             return weatherDescriptionMapping[description] || -1;
+         }
+         
+         
+         async function getBikeAvailability(stationNumber) {
+             const weatherApiUrl = "https://api.openweathermap.org/data/2.5/weather?id=7778677&APPID=38cf0419db9eded5a6f9dfa4ac4fa4b2&units=metric";
+             const weatherResponse = await fetch(weatherApiUrl);
+             const weatherData = await weatherResponse.json();
+         
+             const now = new Date();
+             const hour = now.getHours();
+             const minute = now.getMinutes();
+             const weatherDescriptionId = getCurrentWeatherDescriptionId(weatherData.weather[0].description);
+         
+             const dayOfWeekMapping = [7, 1, 2, 3, 4, 5, 6];
+             const dayOfWeek = dayOfWeekMapping[now.getDay()];
+             // Add other required data here (e.g., month, temperature, humidity, wind speed, and day of week)
+             const data = {
+                 number: stationNumber,
+                 hour: hour,
+                 minute: minute,
+                 month: now.getMonth() + 1,
+                 weather_description: weatherDescriptionId,
+                 main_temp: weatherData.main.temp,
+                 main_humidity: weatherData.main.humidity,
+                 wind_speed: weatherData.wind.speed,
+                 dayofweek: dayOfWeek
+             };
+         
+             
+             const response = await fetch('/predict', {
+                 method: 'POST',
+                 body: new URLSearchParams(data)
+             });
+             const prediction = await response.text();
+         
+             // Display the prediction output on the page
+             const output = `Available bikes at ${hour}:${minute} (current time) with ${weatherData.weather[0].description} weather: ${prediction}`;
+             // You can choose to display the output in a specific HTML element or show it in an alert
+             alert(output);
+         }
+         
+         function getMinDateTime() {
+             const now = new Date();
+             now.setMinutes(now.getMinutes() + 30); // Add 30 minutes to the current time
+             return now.toISOString().slice(0, 16); // Convert to string and remove seconds and milliseconds
+         }
+         document.getElementById('datetime').setAttribute('min', getMinDateTime());
+         
+         
+         
+         const form = document.getElementById('bike-form');
+         
+         form.addEventListener('submit', async (event) => {
+             event.preventDefault();
+         
+             const dayOfWeekMapping = [7, 1, 2, 3, 4, 5, 6];
+         
+             // Get datetime from the form input and extract hour, minute, day of week, and month
+             const datetime = new Date(form.elements.datetime.value);
+             const hour = datetime.getHours();
+             const minute = datetime.getMinutes();
+             const dayOfWeek = dayOfWeekMapping[datetime.getDay()];
+             const month = datetime.getMonth() + 1;
+         
+             // Fetch weather data
+             const weatherApiUrl = "https://api.openweathermap.org/data/2.5/weather?id=7778677&APPID=38cf0419db9eded5a6f9dfa4ac4fa4b2&units=metric";
+             const weatherResponse = await fetch(weatherApiUrl);
+             const weatherData = await weatherResponse.json();
+             const weatherDescriptionId = getCurrentWeatherDescriptionId(weatherData.weather[0].description);
+         
+             const data = {
+                 number: form.elements.number.value,
+                 hour: hour,
+                 minute: minute,
+                 month: month,
+                 weather_description: weatherDescriptionId,
+                 main_temp: weatherData.main.temp,
+                 main_humidity: weatherData.main.humidity,
+                 wind_speed: weatherData.wind.speed,
+                 dayofweek: dayOfWeek
+             };
+         
+             fetch('/predict', {
+                 method: 'POST',
+                 body: new URLSearchParams(data)
+             })
+             .then(response => response.text())
+             .then(data => {
+                 // display the prediction output on the page
+          const output = document.getElementById('output');
+         output.innerHTML = `Predicted bike demand: ${data}`;
+         output.style.display = 'block';
+             })
+             .catch(error => console.error(error));
+         });
+         
+         
+         
+         
+         
+         
+         initializeMap();
+         fetchWeather();
+         
+      </script>
+   </body>
+</html>

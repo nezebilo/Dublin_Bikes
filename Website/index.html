@@ -1,3 +1,4 @@
+<<<<<<< Updated upstream
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -181,3 +182,129 @@ var station_info = data.availablebikes;
 </html>
     
 
+=======
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="stylesheet" href="index.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dublin Bikes Occupancy & Weather</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDDtDXJmXGZXL55OB2QJUVWdH9sVyeHfwA&callback=initMap" async defer></script>
+    
+</head>
+<body>
+    <nav>
+        <a href="#recentNews">Recent News</a>
+        <a href="#cyclingSafety">Cycling Safety Tips</a>
+        <a href="#aboutCompany">About the Company</a>
+        <a href="#weatherWidget">Weather</a>
+    </nav>
+    <h1>Dublin Bikes Occupancy & Weather</h1>
+    <div id="map"></div>
+    <div id="stationInfo"></div>
+     <div id="weatherWidget">
+        <h2>Weather</h2>
+         <canvas id="weatherIcon" width="64" height="64"></canvas>
+        <div id="weatherInfo"></div>
+    </div>
+
+    
+    
+<div id="recentNews">
+    <h2>Cyclists Newsletter</h2>
+    <h3>Local Cyclist Wins National Championship</h3>
+    <p>Yesterday, Dublin-based cyclist Jane O'Connor won the prestigious National Cycling Championship. After an intense race, she crossed the finish line ahead of her competitors, securing her place as Ireland's top cyclist.</p>
+</div>
+
+<div id="cyclingSafety">
+    <h2>Cycling Safety Tips</h2>
+    <ul>
+        <li>Wear a helmet to protect your head in case of an accident.</li>
+        <li>Use front and rear lights when cycling in low light conditions.</li>
+        <li>Obey traffic laws and follow road signs and signals.</li>
+        <li>Stay visible by wearing bright, reflective clothing.</li>
+        <li>Maintain your bike regularly and ensure it is in good working order.</li>
+    </ul>
+</div>
+
+<div id="aboutCompany">
+    <h2>About the Company</h2>
+    <p>Phone: +353 1 234 5678</p>
+    <p>Email: info@dublinbikesoccupancyandweather.ie</p>
+</div>
+
+<script>
+    let map;
+
+    function initMap() {
+        map = new google.maps.Map(document.getElementById("map"), {
+            center: { lat: 53.349805, lng: -6.26031 },
+            zoom: 14
+        });
+
+     
+        fetchBikeStations();
+    }
+
+    function fetchBikeStations() {
+        const bikeStationsApiUrl = "https://api.jcdecaux.com/vls/v1/stations?apiKey=placeholderforapikey";
+
+        fetch(bikeStationsApiUrl)
+            .then(response => response.json())
+            .then(data => {
+                data.forEach(station => {
+                    addMarker(station);
+                });
+            });
+    }
+
+
+function addMarker(station) {
+const marker = new google.maps.Marker({
+position: { lat: station.position.lat, lng: station.position.lng },
+map: map,
+title: station.name
+});
+    
+const infoWindow = new google.maps.InfoWindow({
+    content: `${station.name}<br/>Bikes available: ${station.available_bikes}<br/>Free spots: ${station.available_bike_stands}`
+});
+
+marker.addListener("click", () => {
+    infoWindow.open(map, marker);
+});
+
+    
+    
+}
+
+    
+    
+
+
+function fetchWeather() {
+    const weatherApiUrl = "https://api.openweathermap.org/data/2.5/weather?id=7778677&APPID=b0059847f8ec020060d3e56bd7678549&units=metric";
+    
+    fetch(weatherApiUrl)
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById("weatherInfo").innerHTML = `Weather in Dublin: ${data.weather[0].description}<br/>Temperature: ${data.main.temp}°C`;
+            const iconCode = data.weather[0].icon;
+            const weatherIcon = document.getElementById("weatherIcon");
+            weatherIcon.style.backgroundImage = `url("https://openweathermap.org/img/w/${iconCode}.png")`;
+            weatherIcon.style.backgroundSize = "contain";
+            weatherIcon.style.backgroundRepeat = "no-repeat";
+        });
+}
+
+
+fetchWeather();
+</script>
+
+</body>
+</html>
+    
+
+>>>>>>> Stashed changes
